@@ -44,7 +44,7 @@ main{max-width:760px;margin:0 auto;padding:20px 16px 40px}
   border-radius:6px;background:var(--input);color:var(--text)}
 .inputrow span{color:var(--muted)}
 #msg{min-height:1.3em;margin:0 0 10px;font-size:.85rem;color:var(--warn)}
-.results .r{display:grid;grid-template-columns:56px 1fr 120px;gap:10px;align-items:center;
+.results .r{display:grid;grid-template-columns:56px 1fr 140px;gap:10px;align-items:center;
   padding:12px 14px;border-radius:8px}
 .results .r:nth-child(odd){background:var(--row)}
 .results .r.top{background:var(--accent-soft);color:var(--accent)}
@@ -52,7 +52,18 @@ main{max-width:760px;margin:0 auto;padding:20px 16px 40px}
 .desc{font-size:.9rem}
 .desc .bar{height:6px;border-radius:3px;background:var(--bar);margin-top:6px;overflow:hidden}
 .desc .bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+.vw{display:flex;align-items:center;justify-content:flex-end;gap:6px}
 .val{font-size:1.15rem;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.copy{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;margin-left:6px;padding:3px;border:0;border-radius:4px;background:transparent;color:var(--muted);cursor:pointer;line-height:0}
+.vw .copy{margin-left:0}
+.copy:hover{color:var(--accent);background:var(--accent-soft)}
+.copy:focus-visible{outline:2px solid var(--accent)}
+.copy:disabled{opacity:.3;cursor:default;pointer-events:none}
+.copy.done{color:#16a34a}
+.copy svg{width:14px;height:14px}
+tbody .copy{opacity:0}
+tbody tr:hover .copy,tbody .copy:focus-visible,tbody .copy.done{opacity:1}
+@media (hover:none){tbody .copy{opacity:.6}}
 .wrap{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:.85rem;font-variant-numeric:tabular-nums}
 th{background:#334155;color:#fff;text-align:left;padding:8px 10px;position:sticky;top:0}
@@ -60,7 +71,7 @@ td{padding:6px 10px}
 tbody tr:nth-child(even){background:var(--row)}
 tbody tr.hit{outline:2px solid var(--accent);outline-offset:-2px}
 .note{font-size:.78rem;color:var(--muted);margin-top:10px}
-@media (max-width:480px){.results .r{grid-template-columns:44px 1fr 92px}}
+@media (max-width:480px){.results .r{grid-template-columns:44px 1fr 116px}}
 </style>
 </head>
 <body>
@@ -74,7 +85,7 @@ tbody tr.hit{outline:2px solid var(--accent);outline-offset:-2px}
     <p>Enter any motor rating in kW (for example 0.83, 2.5, 12.5, 35). Results update as you type.</p>
     <div class="inputrow">
       <label for="kw">Target Power (kW):</label>
-      <input id="kw" type="number" inputmode="decimal" step="any" min="0" value="12">
+      <input id="kw" type="number" inputmode="decimal" step="any" min="0" value="" placeholder="e.g. 12">
       <span>valid range 0.12 to 1000 kW</span>
     </div>
     <div id="msg" role="status"></div>
@@ -90,7 +101,7 @@ tbody tr.hit{outline:2px solid var(--accent);outline-offset:-2px}
         <tbody id="tbody"></tbody>
       </table>
     </div>
-    <p class="note">IE2 to IE5: VoltCal, IEC 60034-30-1:2025 Tables 5 to 12 (voltcal.com/iec-motor-efficiency), 4-pole 50 Hz. IE1 is not listed there; it uses the IE1 points from the original calculator, and a dash means no tabulated IE1 value (it is interpolated). Values between ratings may differ slightly from the standard’s cubic log formula.</p>
+    <p class="note">IE2 to IE5: VoltCal, IEC 60034-30-1:2025 Tables 5 to 12 (voltcal.com/iec-motor-efficiency), 4-pole 50 Hz. IE1 is taken from the IEC/EN 60034-30-1:2014 table (4-pole, 50 Hz), which also agrees with the IE2 to IE4 values here. Values between ratings may differ slightly from the standard’s cubic log formula.</p>
   </div>
 </main>
 
@@ -103,8 +114,11 @@ tbody tr.hit{outline:2px solid var(--accent);outline-offset:-2px}
     IE4:[69.8,74.7,75.8,77.9,81.1,81.7,83.9,85.7,87.2,88.2,89.5,90.4,91.1,91.9,92.6,93.3,93.9,94.2,94.5,94.9,95.2,95.4,95.7,96.0,96.1,96.3,96.4,96.6,96.7],
     IE5:[74.3,78.7,79.6,81.5,84.3,84.8,86.7,88.2,89.5,90.4,91.4,92.1,92.8,93.4,94.0,94.6,95.1,95.3,95.5,95.9,96.1,96.3,96.5,96.7,96.9,97.0,97.1,97.2,97.4]
   };
-  var IE1={0.12:50.0,0.18:57.0,0.25:61.5,0.37:66.0,0.55:70.0,0.75:72.1,1.1:75.0,1.5:77.2,2.2:79.7,3:81.5,4:83.1,5.5:84.7,7.5:86.0,11:87.6,15:88.7,18.5:89.3,22:89.9,30:90.7,37:91.2,45:91.7,55:92.1,75:92.7,90:93.0,110:93.3,132:93.5,160:93.8,200:94.0};
+  var IE1={0.12:50.0,0.18:57.0,0.2:58.5,0.25:61.5,0.37:66.0,0.4:66.8,0.55:70.0,0.75:72.1,1.1:75.0,1.5:77.2,2.2:79.7,3:81.5,4:83.1,5.5:84.7,7.5:86.0,11:87.6,15:88.7,18.5:89.3,22:89.9,30:90.7,37:91.2,45:91.7,55:92.1,75:92.7,90:93.0,110:93.3,132:93.5,160:93.8,200:94.0};
   var curves={}, names=["IE1","IE2","IE3","IE4","IE5"];
+  var ICON_COPY='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+  var ICON_OK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+  function copyBtn(v){return '<button type="button" class="copy" data-copy="'+v+'" title="Copy value" aria-label="Copy value">'+ICON_COPY+'</button>';}
   var p1=[],e1=[];
   Object.keys(IE1).map(Number).sort(function(a,b){return a-b}).forEach(function(k){p1.push(k);e1.push(IE1[k]);});
   curves.IE1={p:p1.concat([1000]),e:e1.concat([94.0])};
@@ -125,16 +139,16 @@ tbody tr.hit{outline:2px solid var(--accent);outline-offset:-2px}
   names.forEach(function(c){
     var d=document.createElement("div");
     d.className="r"+(c==="IE5"?" top":"");
-    d.innerHTML='<div class="cls">'+c+'</div><div class="desc">'+info[c]+'<div class="bar"><i></i></div></div><div class="val">--</div>';
+    d.innerHTML='<div class="cls">'+c+'</div><div class="desc">'+info[c]+'<div class="bar"><i></i></div></div><div class="vw"><span class="val">--</span>'+copyBtn("")+'</div>';
     res.appendChild(d);
-    rows[c]={val:d.querySelector(".val"),bar:d.querySelector(".bar i")};
+    rows[c]={val:d.querySelector(".val"),btn:d.querySelector(".copy"),bar:d.querySelector(".bar i")};
   });
 
   var tb=document.getElementById("tbody"),trs=[];
   P.forEach(function(p,i){
     var tr=document.createElement("tr");
     var cells=[p<200?String(p):"200 - 1000",IE1[p],D.IE2[i],D.IE3[i],D.IE4[i],D.IE5[i]];
-    tr.innerHTML=cells.map(function(v,j){return "<td>"+(j===0?v:(v===undefined?"-":v.toFixed(1)+"%"))+"</td>";}).join("");
+    tr.innerHTML=cells.map(function(v,j){return "<td>"+(j===0?v:(v===undefined?"-":"<span>"+v.toFixed(1)+"%</span>"+copyBtn(v.toFixed(1))))+"</td>";}).join("");
     tb.appendChild(tr);trs.push(tr);
   });
 
@@ -145,9 +159,11 @@ tbody tr.hit{outline:2px solid var(--accent);outline-offset:-2px}
     var bad=isNaN(x)||x<=0, out=!bad&&(x<0.12||x>1000);
     msg.textContent=bad?(inp.value===""?"":"Enter a positive number."):(out?"Out of range: enter a rating between 0.12 and 1000 kW.":"");
     names.forEach(function(c){
-      if(bad||out){rows[c].val.textContent="--";rows[c].bar.style.width="0";return;}
+      if(bad||out){rows[c].val.textContent="--";rows[c].bar.style.width="0";rows[c].btn.setAttribute("data-copy","");rows[c].btn.disabled=true;return;}
       var v=interp(c,x);
       rows[c].val.textContent=v.toFixed(2)+"%";
+      rows[c].btn.setAttribute("data-copy",v.toFixed(2));
+      rows[c].btn.disabled=false;
       rows[c].bar.style.width=Math.max(0,Math.min(100,(v-50)/50*100))+"%";
     });
     if(!bad&&!out){
@@ -158,6 +174,14 @@ tbody tr.hit{outline:2px solid var(--accent);outline-offset:-2px}
       }
     }
   }
+  document.addEventListener("click",function(e){
+    var b=e.target.closest&&e.target.closest(".copy");
+    if(!b||b.disabled)return;
+    var t=b.getAttribute("data-copy");
+    function ok(){b.classList.add("done");b.innerHTML=ICON_OK;setTimeout(function(){b.classList.remove("done");b.innerHTML=ICON_COPY;},1200);}
+    function fallback(){var ta=document.createElement("textarea");ta.value=t;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();try{if(document.execCommand("copy"))ok();}catch(_){}document.body.removeChild(ta);}
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok,fallback);}else{fallback();}
+  });
   inp.addEventListener("input",update);
   update();
 })();
