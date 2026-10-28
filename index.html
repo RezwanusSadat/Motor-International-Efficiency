@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>3-Phase Induction Motor Efficiency Calculator</title>
+<style>
+:root{
+  --bg:#f3f5f9; --card:#ffffff; --text:#0f172a; --muted:#64748b; --line:#e2e8f0;
+  --head:#0f172a; --headtext:#ffffff; --accent:#0284c7; --accent-soft:#e0f2fe;
+  --row:#f1f5f9; --input:#fff7b3; --bar:#cbd5e1; --warn:#b45309;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0b1120; --card:#131c31; --text:#e5eaf3; --muted:#94a3b8; --line:#26324d;
+    --head:#060b16; --headtext:#ffffff; --accent:#38bdf8; --accent-soft:#0c2a40;
+    --row:#182239; --input:#3b3510; --bar:#2b3858; --warn:#fbbf24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0b1120; --card:#131c31; --text:#e5eaf3; --muted:#94a3b8; --line:#26324d;
+  --head:#060b16; --headtext:#ffffff; --accent:#38bdf8; --accent-soft:#0c2a40;
+  --row:#182239; --input:#3b3510; --bar:#2b3858; --warn:#fbbf24;
+  color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;line-height:1.45}
+header{background:var(--head);color:var(--headtext);padding:28px 20px 24px}
+header h1{margin:0 auto;max-width:760px;font-size:1.5rem}
+header p{margin:6px auto 0;max-width:760px;color:#94a3b8;font-size:.9rem}
+main{max-width:760px;margin:0 auto;padding:20px 16px 40px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:18px}
+.card h2{margin:0 0 4px;font-size:1rem}
+.card p{margin:2px 0;color:var(--muted);font-size:.85rem}
+.inputrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:18px 0 6px}
+.inputrow label{font-weight:700;color:var(--accent)}
+.inputrow input{width:140px;font-size:1.1rem;padding:8px 10px;border:2px solid var(--accent);
+  border-radius:6px;background:var(--input);color:var(--text)}
+.inputrow span{color:var(--muted)}
+#msg{min-height:1.3em;margin:0 0 10px;font-size:.85rem;color:var(--warn)}
+.results .r{display:grid;grid-template-columns:56px 1fr 120px;gap:10px;align-items:center;
+  padding:12px 14px;border-radius:8px}
+.results .r:nth-child(odd){background:var(--row)}
+.results .r.top{background:var(--accent-soft);color:var(--accent)}
+.cls{font-weight:700}
+.desc{font-size:.9rem}
+.desc .bar{height:6px;border-radius:3px;background:var(--bar);margin-top:6px;overflow:hidden}
+.desc .bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+.val{font-size:1.15rem;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.85rem;font-variant-numeric:tabular-nums}
+th{background:#334155;color:#fff;text-align:left;padding:8px 10px;position:sticky;top:0}
+td{padding:6px 10px}
+tbody tr:nth-child(even){background:var(--row)}
+tbody tr.hit{outline:2px solid var(--accent);outline-offset:-2px}
+.note{font-size:.78rem;color:var(--muted);margin-top:10px}
+@media (max-width:480px){.results .r{grid-template-columns:44px 1fr 92px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>3-Phase Induction Motor Efficiency Calculator</h1>
+  <p>4-Pole (1500 RPM, 50 Hz) | IEC 60034-30-1 Standard Interpolator</p>
+</header>
+<main>
+  <div class="card">
+    <h2>Interactive Power Input</h2>
+    <p>Enter any motor rating in kW (for example 0.83, 2.5, 12.5, 35). Results update as you type.</p>
+    <div class="inputrow">
+      <label for="kw">Target Power (kW):</label>
+      <input id="kw" type="number" inputmode="decimal" step="any" min="0" value="12">
+      <span>valid range 0.12 to 1000 kW</span>
+    </div>
+    <div id="msg" role="status"></div>
+    <div class="results" id="results"></div>
+  </div>
+
+  <div class="card">
+    <h2>Reference Points</h2>
+    <p>Linear interpolation between the tabulated ratings; values stay flat from 200 to 1000 kW. The rows around your input are outlined.</p>
+    <div class="wrap">
+      <table>
+        <thead><tr><th>kW</th><th>IE1</th><th>IE2</th><th>IE3</th><th>IE4</th><th>IE5</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <p class="note">IE2 to IE5: VoltCal, IEC 60034-30-1:2025 Tables 5 to 12 (voltcal.com/iec-motor-efficiency), 4-pole 50 Hz. IE1 is not listed there; it uses the IE1 points from the original calculator, and a dash means no tabulated IE1 value (it is interpolated). Values between ratings may differ slightly from the standard’s cubic log formula.</p>
+  </div>
+</main>
+
+<script>
+(function(){
+  var P=[0.12,0.18,0.2,0.25,0.37,0.4,0.55,0.75,1.1,1.5,2.2,3,4,5.5,7.5,11,15,18.5,22,30,37,45,55,75,90,110,132,160,200];
+  var D={
+    IE2:[59.1,64.7,65.9,68.5,72.7,73.5,77.1,79.6,81.4,82.8,84.3,85.5,86.6,87.7,88.7,89.8,90.6,91.2,91.6,92.3,92.7,93.1,93.5,94.0,94.2,94.5,94.7,94.9,95.1],
+    IE3:[64.8,69.9,71.1,73.5,77.3,78.0,80.8,82.5,84.1,85.3,86.7,87.7,88.6,89.6,90.4,91.4,92.1,92.6,93.0,93.6,93.9,94.2,94.6,95.0,95.2,95.4,95.6,95.8,96.0],
+    IE4:[69.8,74.7,75.8,77.9,81.1,81.7,83.9,85.7,87.2,88.2,89.5,90.4,91.1,91.9,92.6,93.3,93.9,94.2,94.5,94.9,95.2,95.4,95.7,96.0,96.1,96.3,96.4,96.6,96.7],
+    IE5:[74.3,78.7,79.6,81.5,84.3,84.8,86.7,88.2,89.5,90.4,91.4,92.1,92.8,93.4,94.0,94.6,95.1,95.3,95.5,95.9,96.1,96.3,96.5,96.7,96.9,97.0,97.1,97.2,97.4]
+  };
+  var IE1={0.12:50.0,0.18:57.0,0.25:61.5,0.37:66.0,0.55:70.0,0.75:72.1,1.1:75.0,1.5:77.2,2.2:79.7,3:81.5,4:83.1,5.5:84.7,7.5:86.0,11:87.6,15:88.7,18.5:89.3,22:89.9,30:90.7,37:91.2,45:91.7,55:92.1,75:92.7,90:93.0,110:93.3,132:93.5,160:93.8,200:94.0};
+  var curves={}, names=["IE1","IE2","IE3","IE4","IE5"];
+  var p1=[],e1=[];
+  Object.keys(IE1).map(Number).sort(function(a,b){return a-b}).forEach(function(k){p1.push(k);e1.push(IE1[k]);});
+  curves.IE1={p:p1.concat([1000]),e:e1.concat([94.0])};
+  ["IE2","IE3","IE4","IE5"].forEach(function(c){
+    curves[c]={p:P.concat([1000]),e:D[c].concat([D[c][D[c].length-1]])};
+  });
+  var info={IE1:"Standard Efficiency",IE2:"High Efficiency",IE3:"Premium Efficiency (Mandatory)",IE4:"Super Premium Efficiency",IE5:"Ultra Premium Efficiency"};
+
+  function interp(c,x){
+    var p=curves[c].p,e=curves[c].e;
+    for(var i=0;i<p.length-1;i++){
+      if(x>=p[i]&&x<=p[i+1]) return e[i]+(x-p[i])/(p[i+1]-p[i])*(e[i+1]-e[i]);
+    }
+    return null;
+  }
+
+  var res=document.getElementById("results"),rows={};
+  names.forEach(function(c){
+    var d=document.createElement("div");
+    d.className="r"+(c==="IE5"?" top":"");
+    d.innerHTML='<div class="cls">'+c+'</div><div class="desc">'+info[c]+'<div class="bar"><i></i></div></div><div class="val">--</div>';
+    res.appendChild(d);
+    rows[c]={val:d.querySelector(".val"),bar:d.querySelector(".bar i")};
+  });
+
+  var tb=document.getElementById("tbody"),trs=[];
+  P.forEach(function(p,i){
+    var tr=document.createElement("tr");
+    var cells=[p<200?String(p):"200 - 1000",IE1[p],D.IE2[i],D.IE3[i],D.IE4[i],D.IE5[i]];
+    tr.innerHTML=cells.map(function(v,j){return "<td>"+(j===0?v:(v===undefined?"-":v.toFixed(1)+"%"))+"</td>";}).join("");
+    tb.appendChild(tr);trs.push(tr);
+  });
+
+  var inp=document.getElementById("kw"),msg=document.getElementById("msg");
+  function update(){
+    var x=parseFloat(inp.value);
+    trs.forEach(function(t){t.classList.remove("hit");});
+    var bad=isNaN(x)||x<=0, out=!bad&&(x<0.12||x>1000);
+    msg.textContent=bad?(inp.value===""?"":"Enter a positive number."):(out?"Out of range: enter a rating between 0.12 and 1000 kW.":"");
+    names.forEach(function(c){
+      if(bad||out){rows[c].val.textContent="--";rows[c].bar.style.width="0";return;}
+      var v=interp(c,x);
+      rows[c].val.textContent=v.toFixed(2)+"%";
+      rows[c].bar.style.width=Math.max(0,Math.min(100,(v-50)/50*100))+"%";
+    });
+    if(!bad&&!out){
+      for(var i=0;i<P.length;i++){
+        if(x===P[i]){trs[i].classList.add("hit");break;}
+        if(x<P[i]){if(i>0)trs[i-1].classList.add("hit");trs[i].classList.add("hit");break;}
+        if(i===P.length-1)trs[i].classList.add("hit");
+      }
+    }
+  }
+  inp.addEventListener("input",update);
+  update();
+})();
+</script>
+</body>
+</html>
